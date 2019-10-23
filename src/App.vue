@@ -2,7 +2,20 @@
   <div id="app">
     <h1>Welcome to Your crypto portfolio!</h1>
     <div class="container">
-      <b-table striped hover :items="trades" :fields="fields"></b-table>
+      <b-table striped hover :busy="isBusy" :items="trades" :fields="fields">
+        <template v-slot:table-busy>
+          <div class="text-center text-danger my-2">
+            <b-spinner class="align-middle"></b-spinner>
+            <strong>Loading...</strong>
+          </div>
+        </template>
+        <template  v-slot:cell(delete_link)="row">
+          <b-button size="sm" @click="onDelete(row.item.id)" class="mr-2">
+            Delete
+          </b-button>
+        </template>
+
+      </b-table>
       <b-form @submit="addTrade" @reset="onReset" v-if="show">
         <b-form-group
                 id="input-group-1"
@@ -63,7 +76,8 @@
   export default {
     data() {
       return {
-        fields: ['currency', 'amount', 'date_of_purchase', 'note', 'Current market value'],
+        isBusy: false,
+        fields: ['currency', 'amount', 'date_of_purchase', 'note', 'Current market value', 'delete_link'],
         trades: [],
         trade: [],
         form: {
@@ -83,6 +97,7 @@
                 .then(response => {
                   // JSON responses are automatically parsed.
                   this.trades = response.data
+                  this.toggleBusy()
                 })
                 .catch(e => {
                   this.errors.push(e)
@@ -90,8 +105,6 @@
       },
       addTrade(evt) {
         evt.preventDefault()
-        alert(JSON.stringify(this.form))
-
         return new Promise((resolve, reject) => {
           axios.post('https://crypto-profile-api.herokuapp.com/api/v1/trades', {
             amount: this.form.amount,
@@ -102,6 +115,7 @@
                   .then(response => {
                     resolve(response)
                     this.getTrades()
+                    this.toggleBusy()
                   })
                   .catch(error => {
                     reject(error.response.data)
@@ -116,16 +130,28 @@
         this.form.note = ''
         this.form.date_of_purchase = new Date().toISOString().slice(0,10)
         this.form.currency = null
-        // Trick to reset/clear native browser form validation state
-        this.show = false
-        this.$nextTick(() => {
-          this.show = true
+      },
+
+      onDelete(id){
+        return new Promise((resolve, reject) => {
+          axios.delete('https://crypto-profile-api.herokuapp.com/api/v1/trades/' + id)
+                  .then(response => {
+                    this.toggleBusy()
+                    resolve(response)
+                    this.getTrades()
+                  })
+                  .catch(error => {
+                    reject(error.response.data)
+                  })
         })
-      }
+      },
+      toggleBusy() {
+        this.isBusy = !this.isBusy
+      },
     },
 
-    // Fetches posts when the component is created.
     created() {
+      this.toggleBusy()
       this.getTrades()
     }
   }
