@@ -93,7 +93,7 @@
     },
     methods: {
       getTrades(){
-        axios.get(`https://crypto-profile-api.herokuapp.com/api/v1/trades`)
+        axios.get(process.env.VUE_APP_API + '/trades')
                 .then(response => {
                   // JSON responses are automatically parsed.
                   this.trades = response.data
@@ -106,7 +106,7 @@
       addTrade(evt) {
         evt.preventDefault()
         return new Promise((resolve, reject) => {
-          axios.post('https://crypto-profile-api.herokuapp.com/api/v1/trades', {
+          axios.post(process.env.VUE_APP_API + '/trades', {
             amount: this.form.amount,
             note: this.form.note,
             date_of_purchase: this.form.date_of_purchase,
@@ -133,8 +133,10 @@
       },
 
       onDelete(id){
+        var retVal = confirm("Are you sure you want to delete this trade");
+        if( retVal == true ) {
         return new Promise((resolve, reject) => {
-          axios.delete('https://crypto-profile-api.herokuapp.com/api/v1/trades/' + id)
+          axios.delete(process.env.VUE_APP_API + '/trades/' + id)
                   .then(response => {
                     this.toggleBusy()
                     resolve(response)
@@ -144,6 +146,7 @@
                     reject(error.response.data)
                   })
         })
+        }
       },
       toggleBusy() {
         this.isBusy = !this.isBusy
